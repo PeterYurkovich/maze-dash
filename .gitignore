@@ -1,0 +1,6 @@
+# Rust ignores
+server/target
+
+# JS ignores
+web/dist
+web/node_modules
