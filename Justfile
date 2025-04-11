@@ -25,3 +25,11 @@ run-frontend: install
 run-backend:
     @echo "Running backend..."
     cd server && cargo run
+
+# test the backend
+test-backend:
+    @echo "Testing backend..."
+    cd server && cargo test
+
+    # test both
+test: test-backend

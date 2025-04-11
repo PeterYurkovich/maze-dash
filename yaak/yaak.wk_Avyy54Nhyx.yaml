@@ -1,0 +1,10 @@
+type: workspace
+model: workspace
+id: wk_Avyy54Nhyx
+createdAt: 2025-04-11T01:39:22.110529977
+updatedAt: 2025-04-11T01:40:56
+name: maze-dash
+description: yaak configs for the project for API testing
+settingValidateCertificates: true
+settingFollowRedirects: true
+settingRequestTimeout: 0

@@ -1,0 +1,26 @@
+type: http_request
+model: http_request
+id: rq_6QpSqWLHU9
+createdAt: 2025-04-11T01:41:20.649455001
+updatedAt: 2025-04-11T01:42:13.158767121
+workspaceId: wk_Avyy54Nhyx
+folderId: null
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    {
+      "name": "mazie"
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: ibrbkRTAId
+method: POST
+name: ''
+sortPriority: -1744335700000.0
+url: http://localhost:3001/person
+urlParameters: []
