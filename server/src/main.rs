@@ -1,12 +1,17 @@
 use axum::{
     Json, Router,
-    http::StatusCode,
-    response::IntoResponse,
+    body::Body,
+    http::{Request, StatusCode},
+    response::{IntoResponse, Response},
     routing::{get, post},
 };
+
 use rand::RngCore;
 use rusqlite::{Connection, Result};
 use serde::{Deserialize, Serialize};
+use std::convert::Infallible;
+use tower::ServiceExt;
+use tower_http::services::{ServeDir, ServeFile};
 
 #[derive(Debug, Serialize)]
 struct Person {
@@ -35,9 +40,32 @@ fn app() -> Result<Router> {
         )
         .unwrap_or(1);
 
+    let static_file_service = |req: Request<Body>| async {
+        let mut resp = match req.uri().to_string().as_str() {
+            s if s.ends_with("css") => ServeDir::new("../web/dist/assets").oneshot(req).await,
+            s if s.ends_with("js") => ServeDir::new("../web/dist/assets").oneshot(req).await,
+            s if s.ends_with("ttf") => ServeDir::new("../web/dist/assets").oneshot(req).await,
+            s if s.ends_with("png") => ServeDir::new("../web/dist/assets").oneshot(req).await,
+            _ => ServeFile::new("../web/dist/index.html").oneshot(req).await,
+        };
+
+        if resp.as_mut().unwrap().status() == 404 {
+            return Ok::<_, Infallible>(
+                Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::from("Something went wrong...\n"))
+                    .unwrap(),
+            );
+        }
+
+        // Ok::<_, Infallible>(resp.into_response().map(|body| BoxBody::new(body)))
+        Ok::<_, Infallible>(resp.into_response())
+    };
+
     return Ok(Router::new()
-        .route("/", get(|| async { "Hello, World!" }))
-        .route("/person", post(create_person)));
+        .nest_service("/assets", get(static_file_service))
+        .route("/person", post(create_person))
+        .fallback_service(get(static_file_service)));
 }
 
 #[derive(Debug, Deserialize)]
@@ -84,26 +112,7 @@ mod tests {
         body::Body,
         http::{Request, StatusCode},
     };
-    use http_body_util::BodyExt;
     use tower::ServiceExt; // for `call`, `oneshot`, and `ready`
-
-    #[tokio::test]
-    async fn hello_world() {
-        let app = app();
-
-        // `Router` implements `tower::Service<Request<Body>>` so we can
-        // call it like any tower service, no need to run an HTTP server.
-        let response = app
-            .unwrap()
-            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-
-        let body = response.into_body().collect().await.unwrap().to_bytes();
-        assert_eq!(&body[..], b"Hello, World!");
-    }
 
     #[tokio::test]
     async fn hello_person() {
