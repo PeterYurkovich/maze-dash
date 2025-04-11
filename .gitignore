@@ -1,5 +1,6 @@
 # Rust ignores
 server/target
+server/sqlite.db3
 
 # JS ignores
 web/dist
