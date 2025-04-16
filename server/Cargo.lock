@@ -443,6 +443,7 @@ dependencies = [
  "bitvec",
  "packed_struct_codegen",
  "serde",
+ "serde_derive",
 ]
 
 [[package]]

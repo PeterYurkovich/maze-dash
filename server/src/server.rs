@@ -2,23 +2,17 @@ mod maze;
 use axum::{
     Json, Router,
     body::Body,
+    extract::Query,
     http::{Request, StatusCode},
     response::{IntoResponse, Response},
-    routing::{get, post},
+    routing::get,
 };
 use std::convert::Infallible;
 use tower::ServiceExt;
 use tower_http::services::{ServeDir, ServeFile};
 
-use rand::RngCore;
 use rusqlite::{Connection, Result};
 use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize)]
-struct Person {
-    id: u64,
-    name: String,
-}
 
 pub fn app() -> Result<Router> {
     let connection = Connection::open("./sqlite.db3").unwrap();
@@ -26,9 +20,9 @@ pub fn app() -> Result<Router> {
 
     connection
         .execute(
-            "CREATE TABLE person (
+            "CREATE TABLE maze (
                 id    INTEGER PRIMARY KEY,
-                name  TEXT NOT NULL
+                maze  BLOB
             )",
             (), // empty list of parameters.
         )
@@ -57,45 +51,74 @@ pub fn app() -> Result<Router> {
 
     return Ok(Router::new()
         .nest_service("/assets", get(static_file_service))
-        .route("/person", post(create_person))
+        .route("/api/maze", get(get_maze).post(create_maze))
         .fallback_service(get(static_file_service)));
 }
 
 #[derive(Debug, Deserialize)]
-struct CreatePerson {
-    name: String,
+struct MazeParams {
+    id: u8,
 }
 
-async fn create_person(Json(input): Json<CreatePerson>) -> impl IntoResponse {
-    let connection = Connection::open("./sqlite.db3").unwrap();
-    let mut rng = rand::rng();
+#[derive(Debug, Deserialize, Serialize)]
+struct MazeTable {
+    id: u8,
+    maze: Vec<u8>,
+}
 
-    let new_person = Person {
-        id: rng.next_u64(),
-        name: input.name,
+async fn get_maze(param: Query<MazeParams>) -> impl IntoResponse {
+    let connection = Connection::open("./sqlite.db3").unwrap();
+
+    let stmt_result = connection.prepare("SELECT * FROM maze WHERE id=?");
+    let mut stmt = match stmt_result {
+        Ok(r) => r,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Body::from(err.to_string()),
+            );
+        }
     };
 
-    connection
-        .execute(
-            "INSERT INTO person (name) VALUES (?1)",
-            rusqlite::params![new_person.name],
-        )
-        .unwrap();
-
-    let mut stmt = connection.prepare("SELECT id, name FROM person").unwrap();
-    let person_iter = stmt
-        .query_map([], |row| {
-            Ok(Person {
-                id: row.get(0).unwrap(),
-                name: row.get(1).unwrap(),
-            })
+    let maze_ret_result = stmt.query_row(rusqlite::params![param.id], |row| {
+        Ok(MazeTable {
+            id: row.get(0).unwrap(),
+            maze: row.get(1).unwrap(),
         })
-        .unwrap();
+    });
+    let maze_ret = match maze_ret_result {
+        Ok(r) => r,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Body::from(err.to_string()),
+            );
+        }
+    };
 
-    for person in person_iter {
-        println!("Found person {:?}", person.unwrap());
+    (StatusCode::OK, Body::from(maze_ret.maze))
+}
+
+#[derive(Debug, Deserialize)]
+struct CreateMaze {
+    maze: Vec<u8>,
+}
+
+async fn create_maze(Json(input): Json<CreateMaze>) -> impl IntoResponse {
+    let connection = Connection::open("./sqlite.db3").unwrap();
+
+    let query_result = connection.execute(
+        "INSERT INTO maze (maze) VALUES (?1)",
+        rusqlite::params![input.maze],
+    );
+
+    match query_result {
+        Ok(_) => (StatusCode::CREATED, Body::empty()),
+        Err(err) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Body::from(err.to_string()),
+        ),
     }
-    (StatusCode::CREATED, Json(new_person))
 }
 
 #[cfg(test)]
@@ -108,7 +131,7 @@ mod tests {
     use tower::ServiceExt; // for `call`, `oneshot`, and `ready`
 
     #[tokio::test]
-    async fn hello_person() {
+    async fn create_maze() {
         let app = app();
 
         // `Router` implements `tower::Service<Request<Body>>` so we can
@@ -117,15 +140,48 @@ mod tests {
             .unwrap()
             .oneshot(
                 Request::builder()
-                    .uri("/person")
+                    .uri("/api/maze")
                     .method("POST")
                     .header("Content-Type", "application/json")
-                    .body(Body::from(r#"{"name": "mazie"}"#))
+                    .body(Body::from(r#"{"maze": [0,2]}"#))
                     .unwrap(),
             )
             .await
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::CREATED);
+    }
+
+    #[tokio::test]
+    async fn get_maze() {
+        let app = app();
+
+        // `Router` implements `tower::Service<Request<Body>>` so we can
+        // call it like any tower service, no need to run an HTTP server.
+        let response = app
+            .unwrap()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/maze?id=1")
+                    .method("GET")
+                    .body(Body::default())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+
+        dbg!(&body_bytes);
+
+        // Deserialize into MazeTable
+        let maze_data: Vec<u8> = body_bytes.to_vec();
+
+        // Now you can assert on the maze_table fields
+        assert_eq!(maze_data, [0, 1]);
     }
 }

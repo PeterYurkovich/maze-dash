@@ -1,6 +1,7 @@
 use packed_struct::prelude::*;
+use serde::{Deserialize, Serialize};
 
-#[derive(PackedStruct)]
+#[derive(PackedStruct, Serialize, Deserialize)]
 #[packed_struct(bit_numbering = "msb0")]
 pub struct PackedMazeCell {
     #[packed_field(bits = "0:1")]
