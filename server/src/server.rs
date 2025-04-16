@@ -1,3 +1,4 @@
+mod maze;
 use axum::{
     Json, Router,
     body::Body,
@@ -21,6 +22,7 @@ struct Person {
 
 pub fn app() -> Result<Router> {
     let connection = Connection::open("./sqlite.db3").unwrap();
+    let _ = maze::get_packed_maze();
 
     connection
         .execute(

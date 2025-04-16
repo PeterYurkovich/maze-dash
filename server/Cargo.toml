@@ -13,3 +13,4 @@ tower-http = { version = "0.6.2", features = [
     "fs",
 ] } # includes the cors feature in case it is needed.
 tower = { version = "0.5.2", features = ["util"] }
+packed_struct = "0.10.1"
