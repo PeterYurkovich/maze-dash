@@ -1,0 +1,48 @@
+.NameTrio {
+    width: 300px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    column-gap: 4px;
+    justify-content: center;
+    align-items: center;
+}
+
+.LetterIconParent {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.LetterIcon {
+    width: 80px;
+    border: 1px solid white;
+    border-radius: 4px;
+    background: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 60px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.Home {
+    width: 100%;
+    height: 100%;
+    min-height: 50vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    row-gap: 8px;
+}
+
+.ConfirmButton {
+    margin-top: 20px;
+    background: none;
+    border: 1px solid rgb(85, 175, 85);
+    color: rgb(85, 175, 85);
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+}

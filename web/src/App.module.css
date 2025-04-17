@@ -1,22 +1,48 @@
-.App {
-  text-align: center;
+.Header {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  background-color: #6479a2;
+  height: 40px;
+  justify-content: center;
+  align-items: center;
+}
+
+.HeaderIcon {
+  width: 20px;
+  height: 20px;
+  color: white
+}
+
+.Title {
+  margin: 0px;
+  color: white;
+}
+
+.NavIconUnselected {
+  color: white
+}
+
+.HeaderTitle {
+  display: flex;
+  justify-content: center;
+}
+
+.Root {
+  background-color: #282c34;
+}
+
+.ContentRoot {
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  color: white
 }
 
 .logo {
   animation: logo-spin infinite 20s linear;
   height: 40vmin;
   pointer-events: none;
-}
-
-.header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
 }
 
 .link {
@@ -27,6 +53,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
