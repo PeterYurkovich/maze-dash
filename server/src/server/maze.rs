@@ -16,20 +16,6 @@ pub struct PackedMazeCell {
     left_blocked: bool,
 }
 
-pub fn get_packed_maze() -> Result<[u8; 1], PackingError> {
-    let unpacked = PackedMazeCell {
-        version: 0.into(),
-        up_blocked: true,
-        right_blocked: false,
-        down_blocked: false,
-        left_blocked: false,
-    };
-
-    let packed = unpacked.pack();
-
-    packed
-}
-
 #[cfg(test)]
 mod tests {
     use super::PackedMazeCell;

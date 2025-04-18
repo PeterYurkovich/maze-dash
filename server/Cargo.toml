@@ -6,11 +6,11 @@ edition = "2024"
 [dependencies]
 tokio = { version = "1.44.2", features = ["full"] }
 axum = { version = "0.8.3", features = ["json"] }
-rusqlite = { version = "0.34.0", features = ["bundled"] }
+rusqlite = { version = "0.32.0", features = ["bundled"] }
 serde = { version = "1.0.219", features = ["derive"] }
-rand = "0.9.0"
 tower-http = { version = "0.6.2", features = [
     "fs",
 ] } # includes the cors feature in case it is needed.
 tower = { version = "0.5.2", features = ["util"] }
 packed_struct = { version = "0.10.1", features = ["use_serde"] }
+rusqlite_migration = "1.3.1"

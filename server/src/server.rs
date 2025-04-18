@@ -15,19 +15,6 @@ use rusqlite::{Connection, Result};
 use serde::{Deserialize, Serialize};
 
 pub fn app() -> Result<Router> {
-    let connection = Connection::open("./sqlite.db3").unwrap();
-    let _ = maze::get_packed_maze();
-
-    connection
-        .execute(
-            "CREATE TABLE maze (
-                id    INTEGER PRIMARY KEY,
-                maze  BLOB
-            )",
-            (), // empty list of parameters.
-        )
-        .unwrap_or(1);
-
     let static_file_service = |req: Request<Body>| async {
         let mut resp = match req.uri().to_string().as_str() {
             s if s.ends_with("css") => ServeDir::new("../web/dist/assets").oneshot(req).await,
@@ -57,19 +44,19 @@ pub fn app() -> Result<Router> {
 
 #[derive(Debug, Deserialize)]
 struct MazeParams {
-    id: u8,
+    key: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 struct MazeTable {
-    id: u8,
+    id: String,
     maze: Vec<u8>,
 }
 
 async fn get_maze(param: Query<MazeParams>) -> impl IntoResponse {
     let connection = Connection::open("./sqlite.db3").unwrap();
 
-    let stmt_result = connection.prepare("SELECT * FROM maze WHERE id=?");
+    let stmt_result = connection.prepare("SELECT * FROM maze WHERE key=?");
     let mut stmt = match stmt_result {
         Ok(r) => r,
         Err(err) => {
@@ -80,7 +67,7 @@ async fn get_maze(param: Query<MazeParams>) -> impl IntoResponse {
         }
     };
 
-    let maze_ret_result = stmt.query_row(rusqlite::params![param.id], |row| {
+    let maze_ret_result = stmt.query_row(rusqlite::params![param.key], |row| {
         Ok(MazeTable {
             id: row.get(0).unwrap(),
             maze: row.get(1).unwrap(),
@@ -101,17 +88,21 @@ async fn get_maze(param: Query<MazeParams>) -> impl IntoResponse {
 
 #[derive(Debug, Deserialize)]
 struct CreateMaze {
+    key: String,
     maze: Vec<u8>,
 }
 
 async fn create_maze(Json(input): Json<CreateMaze>) -> impl IntoResponse {
+    dbg!("here");
     let connection = Connection::open("./sqlite.db3").unwrap();
 
+    dbg!(&input.key, &input.maze);
     let query_result = connection.execute(
-        "INSERT INTO maze (maze) VALUES (?1)",
-        rusqlite::params![input.maze],
+        "INSERT INTO maze (key, maze) VALUES (?1, ?2)",
+        rusqlite::params![input.key, input.maze],
     );
 
+    dbg!("here3");
     match query_result {
         Ok(_) => (StatusCode::CREATED, Body::empty()),
         Err(err) => (
@@ -124,14 +115,20 @@ async fn create_maze(Json(input): Json<CreateMaze>) -> impl IntoResponse {
 #[cfg(test)]
 mod tests {
     use super::app;
+    use crate::database;
     use axum::{
         body::Body,
         http::{Request, StatusCode},
     };
+    use rusqlite::Connection;
     use tower::ServiceExt; // for `call`, `oneshot`, and `ready`
 
     #[tokio::test]
     async fn create_maze() {
+        database::migrate().unwrap();
+        let connection = Connection::open("./sqlite.db3").unwrap();
+        let _ = connection.execute("DELETE FROM maze", []);
+
         let app = app();
 
         // `Router` implements `tower::Service<Request<Body>>` so we can
@@ -143,17 +140,23 @@ mod tests {
                     .uri("/api/maze")
                     .method("POST")
                     .header("Content-Type", "application/json")
-                    .body(Body::from(r#"{"maze": [0,2]}"#))
+                    .body(Body::from(r#"{"key": "howdy", "maze": [0,2]}"#))
                     .unwrap(),
             )
             .await
             .unwrap();
+
+        // let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+        //     .await
+        //     .unwrap();
+        // dbg!(body_bytes);
 
         assert_eq!(response.status(), StatusCode::CREATED);
     }
 
     #[tokio::test]
     async fn get_maze() {
+        database::migrate().unwrap();
         let app = app();
 
         // `Router` implements `tower::Service<Request<Body>>` so we can
@@ -162,7 +165,7 @@ mod tests {
             .unwrap()
             .oneshot(
                 Request::builder()
-                    .uri("/api/maze?id=1")
+                    .uri("/api/maze?key=howdy")
                     .method("GET")
                     .body(Body::default())
                     .unwrap(),
@@ -182,6 +185,6 @@ mod tests {
         let maze_data: Vec<u8> = body_bytes.to_vec();
 
         // Now you can assert on the maze_table fields
-        assert_eq!(maze_data, [0, 1]);
+        assert_eq!(maze_data, [0, 2]);
     }
 }
