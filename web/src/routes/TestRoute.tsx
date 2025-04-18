@@ -1,5 +1,12 @@
-export const TestRoute = () => {
+import { useContext } from "solid-js"
+import { MazeContext } from "../context/MazeContext"
+
+const TestRoute = () => {
+    const { mazeStore } = useContext<any>(MazeContext)
+
     return (
-        <div>balls (testing routing)</div>
+        <div>{mazeStore.userId ? `Logged in as: ${mazeStore.userId}` : "Not logged in"}</div>
     )
   }
+  
+export default TestRoute

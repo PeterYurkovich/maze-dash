@@ -1,10 +1,10 @@
-import type { Component } from 'solid-js';
+import { lazy, type Component } from 'solid-js';
 import styles from './App.module.css';
-import { Home } from './routes/Home';
-import { TestRoute } from './routes/TestRoute';
 import { Route, Router } from '@solidjs/router';
 import { Header } from './Header';
-import { Title } from "@solidjs/meta"
+
+const Home = lazy(() => import("./routes/Home"));
+const TestRoute = lazy(() => import("./routes/TestRoute"))
 
 const App: Component = () => {
   return (
@@ -12,8 +12,8 @@ const App: Component = () => {
       <Header />
       <div class={styles.ContentRoot}>
         <Router>
-          <Route path="/" component={<Home />} />
-          <Route path="/balls" component={<TestRoute />} />
+          <Route path="/" component={Home} />
+          <Route path="/balls" component={TestRoute} />
         </Router>
       </div>
     </div>

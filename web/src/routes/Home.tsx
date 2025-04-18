@@ -1,13 +1,17 @@
-import { Accessor, createSignal, Setter } from "solid-js"
+import { Accessor, createSignal, Setter, useContext } from "solid-js"
 import styles from "./home.module.css"
+import { MazeContext } from "../context/MazeContext"
 
-export const Home = () => {
-  const [l1, setL1] = createSignal("A")
-  const [l2, setL2] = createSignal("A")
-  const [l3, setL3] = createSignal("A")
+const Home = () => {
+  const { mazeStore, setMazeStore } = useContext<any>(MazeContext)
+
+  const [l1, setL1] = createSignal(mazeStore.userId ? mazeStore.userId[0] : "A")
+  const [l2, setL2] = createSignal(mazeStore.userId ? mazeStore.userId[1] : "A")
+  const [l3, setL3] = createSignal(mazeStore.userId ? mazeStore.userId[2] : "A")
 
   const handleConfirm = () => {
     console.log(`User is logging in with initials [${l1()}${l2()}${l3()}]`)
+    setMazeStore("userId", () => `${l1()}${l2()}${l3()}`)
     //TODO: route user to maze page with url params
   }
 
@@ -30,8 +34,12 @@ export const Home = () => {
           <div onClick={() => handleLetterClick(l3, setL3)} class={styles.LetterIcon}>{l3()}</div>
         </div>
       </div>
-      <button class={styles.ConfirmButton} onClick={handleConfirm}>Confirm</button>
+      <a href={`/balls?user=${l1()}${l2()}${l3()}`}>
+        <button class={styles.ConfirmButton} onClick={handleConfirm}>Confirm</button>
+      </a>
     </div>
   )
 }
+
+export default Home
 
